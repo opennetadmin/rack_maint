@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS `racks` (
   `name` varchar(64) NOT NULL,
   `description` varchar(255) NOT NULL,
   `size` int(10) NOT NULL COMMENT 'How many U are in this rack',
+  `numbering` enum('DESC','ASC') NOT NULL DEFAULT 'DESC' COMMENT 'Direction of rack numbering',
   `location_id` int(10) NOT NULL COMMENT 'location of rack',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Stores info about physical racks';

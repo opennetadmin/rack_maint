@@ -35,8 +35,18 @@ Usage
 Future
 ======
 
-  * allow definition of racks that start from the bottom and go up in number
+  * allow definition of racks that start from the bottom and go up in number - Completed 16/04/2013 by Paul Wollner
   * allow easier moves from rack positions, includes inserts, dragging etc
   * define rack adjacency.  then you can navigate from rack to rack as you view them.
 
+Upgrade
+=======
+
+Upgrade proceedure for v1.0 to v1.1
+
+  * Unpack new tarball over top of existing plugin installation
+  * Update SQL tables:
+    * Use your favorite SQL tool to apply what is in `upgrade-1.0-1.1.sql`
+      OR
+    * Use `dcm.pl -r ona_sql sql=./upgrade-1.0-1.1.sql commit=y`
 
