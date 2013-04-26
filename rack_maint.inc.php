@@ -293,7 +293,7 @@ function rack_add($options="") {
     global $conf, $self, $onadb;
 
     // Version - UPDATE on every edit!
-    $version = '1.00';
+    $version = '1.10';
 
     printmsg("DEBUG => rack_add({$options}) called", 3);
 
@@ -317,6 +317,7 @@ Add a new rack
     size=INT                  Size of rack in units
     description=STRING        Description
     location=STRING|id        Location of rack
+    numbering=STRING          Numbering direction of rack
 
 
 EOM
@@ -362,7 +363,12 @@ EOM
         $options['location'] = $loc['id'];
     }
 
-    // Get the next ID for the new dns record
+    // Check the numbering plan. Assume descending if invalid.
+    if ( ($options['numbering'] != 'ASC') && ($options['numbering'] != 'DESC') ) {
+       $options['numbering'] = 'DESC';
+    }
+
+    // Get the next ID for the new rack record
     $id = ona_get_next_id('racks');
     if (!$id) {
         $self['error'] = "ERROR => The ona_get_next_id('racks') call failed!";
@@ -375,7 +381,7 @@ EOM
     $options['description'] = str_replace('\\=','=',$options['description']);
     $options['description'] = str_replace('\\&','&',$options['description']);
 
-    // Add the dns record
+    // Add the rack record
     list($status, $rows) = db_insert_record(
         $onadb,
         'racks',
@@ -384,6 +390,7 @@ EOM
             'size'              => $options['size'],
             'description'       => $options['description'],
             'location_id'       => $options['location'],
+           'numbering'         => $options['numbering'],
             'name'              => $options['name']
        )
     );
@@ -395,7 +402,7 @@ EOM
 
 
     // Else start an output message
-    $text = "INFO => Added rack '{$options['name']}' with a size of: {$options['size']}.";
+    $text = "INFO => Added ".strtolower($options['numbering'])." rack '{$options['name']}' with a size of: {$options['size']}.";
     printmsg($text,0);
     $text .= "\n";
 
@@ -597,7 +604,7 @@ EOM
         $options['alt_name'] = '';
     }
 
-    // Get the next ID for the new dns record
+    // Get the next ID for the new rack record
     $id = ona_get_next_id('rack_assignments');
     if (!$id) {
         $self['error'] = "ERROR => The ona_get_next_id('rack_assignments') call failed!";
@@ -610,7 +617,7 @@ EOM
     //$options['notes'] = str_replace('\\=','=',$options['notes']);
     //$options['notes'] = str_replace('\\&','&',$options['notes']);
 
-    // Add the dns record
+    // Add the rack record
     list($status, $rows) = db_insert_record(
         $onadb,
         'rack_assignments',
@@ -674,7 +681,7 @@ function rack_modify($options="") {
     printmsg("DEBUG => rack_modify({$options}) called", 3);
 
     // Version - UPDATE on every edit!
-    $version = '1.00';
+    $version = '1.10';
 
     // Parse incoming options string to an array
     $options = parse_options($options);
@@ -686,7 +693,8 @@ function rack_modify($options="") {
                                 ($options['set_name'] or
                                  $options['set_description'] or
                                  $options['set_location'] or
-                                 $options['set_size'])
+                                 $options['set_size'] or
+                                 $options['set_numbering'])
                               )
         )
     {
@@ -708,6 +716,7 @@ Modifies a rack in the database
     set_size=INT                   Size of device in rack units
     set_description=STRING         Description of rack
     set_location=STRING|ID         Location of rack
+    set_numbering=STRING           Numbering direction of rack
 
 EOM
         ));
@@ -782,6 +791,12 @@ EOM
         if ($loc['id'] != $orig_rack['location_id']) $SET['location_id'] = $loc['id'];
     }
 
+    // Check the numbering plan. Assume descending if invalid.
+    if ( ($options['set_numbering'] != 'ASC') && ($options['set_numbering'] != 'DESC') ) {
+       $options['set_numbering'] = 'DESC';
+    }
+    if ($options['set_numbering'] != $orig_rack['numbering']) $SET['numbering'] = $options['set_numbering'];
+
     // Check permissions
     if (!auth('advanced')) {
         $self['error'] = "Permission denied!";
@@ -807,6 +822,7 @@ EOM
 
     $log_msg = "INFO => Rack UPDATED:{$new_rack['id']}: ";
     $more="";
+    $original_rack = $orig_rack;
     foreach(array_keys($original_rack) as $key) {
         if($original_rack[$key] != $new_rack[$key]) {
             $log_msg .= $more . $key . "[" .$original_rack[$key] . "=>" . $new_rack[$key] . "]";
@@ -1314,7 +1330,14 @@ function ws_rack_editor($window_name, $form='') {
         el('name').focus();
 EOL;
 
+    $numbering_list = "<option value=\"\"></option>\n";
+    $numberings = array('DESC' => 'Descending','ASC' => 'Ascending');
+    foreach (array_keys((array)$numberings) as $numbering) {
+        $selected = '';
 
+        if ($numbering == $rack['numbering']) { $selected = 'SELECTED'; }
+        $numbering_list .= "<option value=\"{$numbering}\" {$selected}>{$numberings[$numbering]}</option>\n";
+    }
     // Load some html into $window['html']
     $window['html'] .= <<<EOL
 
@@ -1352,6 +1375,19 @@ EOL;
                     type="text"
                     size="5" maxlength="5"
                 >
+            </td>
+        </tr>
+
+        <tr>
+            <td class="input_required" align="right">
+                Numbering
+            </td>
+            <td class="padding" align="left" width="100%">
+                <select
+                    name="numbering"
+                    alt="Numbering scheme of rack"
+                    class="edit"
+                    {$numbering_list}</select>
             </td>
         </tr>
 
@@ -1677,6 +1713,7 @@ function ws_rack_save($window_name, $form='') {
         $form['set_size'] = $form['size'];
         $form['set_name'] = $form['name'];
         $form['set_location'] = $form['location'];
+        $form['set_numbering'] = $form['numbering'];
         $form['rack'] = $form['rack_id'];
     }
 
@@ -2164,11 +2201,18 @@ $rackunit .= <<<EOL
 </tr>
 EOL;
 
-    $i = 1;
     $used_color = '#AA66CC';
     $used_color_lite = '#EEDDEE';
     // Start at the top rack U and start a loop of this rack until we reach its SIZE
-    while ($i <= $record['size']):
+    $j = 1;
+    while ($j <= $record['size']):
+        if ($record['numbering'] == 'ASC') {
+           //We need to reverse the numbering scheme
+           $i = abs($j - 1 - $record['size']);
+       } else {
+           //We are doing the normal count
+           $i = $j;
+       }
         // Get info about front/back assignments
         list($status, $frows, $assignment_front) = db_get_record($onadb, 'rack_assignments', array('rack_id' => $record['id'],'position' => $i,'mounted_from' => 1));
         list($status, $brows, $assignment_back)  = db_get_record($onadb, 'rack_assignments', array('rack_id' => $record['id'],'position' => $i,'mounted_from' => 2));
@@ -2399,7 +2443,7 @@ EOL;
 
         $fsize_counter--;
         $bsize_counter--;
-        $i++;
+        $j++;
     endwhile;
 
 
