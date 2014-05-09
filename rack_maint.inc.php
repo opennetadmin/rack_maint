@@ -10,7 +10,7 @@ if (file_exists(dirname(__FILE__)."/install.php")) {
 // TODO: MP: does having a rack list like this truely scale?? I guess it will do for now.. 
 
 // Check permissions
-if (!auth('advanced')) {
+if (! (auth('rack_add') or auth('advanced'))){
     $window['js'] = "alert('Permission denied!'); removeElement('{$window_name}');";
     return;
 }
@@ -125,7 +125,7 @@ function ws_display_list($window_name, $form) {
     global $font_family, $color, $style, $images;
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -325,7 +325,7 @@ EOM
     }
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_add') or auth('advanced'))){
         $self['error'] = "Permission denied!";
         printmsg($self['error'], 0);
         return(array(10, $self['error'] . "\n"));
@@ -476,7 +476,7 @@ EOM
     }
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_add') or auth('advanced'))){
         $self['error'] = "Permission denied!";
         printmsg($self['error'], 0);
         return(array(10, $self['error'] . "\n"));
@@ -798,7 +798,7 @@ EOM
     if ($options['set_numbering'] != $orig_rack['numbering']) $SET['numbering'] = $options['set_numbering'];
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_mod') or auth('advanced'))){
         $self['error'] = "Permission denied!";
         printmsg($self['error'], 0);
         return(array(10, $self['error'] . "\n"));
@@ -966,7 +966,7 @@ EOM
 
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_mod') or auth('advanced'))){
         $self['error'] = "Permission denied!";
         printmsg($self['error'], 0);
         return(array(10, $self['error'] . "\n"));
@@ -1092,7 +1092,7 @@ EOM
     if ($options['commit'] == 'Y') {
 
         // Check permissions
-        if (!auth('advanced')) {
+        if (! (auth('rack_del') or auth('advanced'))){
             $self['error'] = "Permission denied!";
             printmsg($self['error'], 0);
             return(array(10, $self['error'] . "\n"));
@@ -1223,7 +1223,7 @@ EOM
     if ($options['commit'] == 'Y') {
 
         // Check permissions
-        if (!auth('advanced')) {
+        if (! (auth('rack_del') or auth('advanced'))){
             $self['error'] = "Permission denied!";
             printmsg($self['error'], 0);
             return(array(10, $self['error'] . "\n"));
@@ -1283,7 +1283,7 @@ function ws_rack_editor($window_name, $form='') {
 
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_mod') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1466,7 +1466,7 @@ function ws_ru_editor($window_name, $form='') {
 
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_mod') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1694,7 +1694,7 @@ function ws_rack_save($window_name, $form='') {
     global $base, $include, $conf, $self, $onadb;
 
     // Check permissions
-    if (! (auth('advanced')) ) {
+    if (! (auth('rack_mod') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1756,7 +1756,7 @@ function ws_save($window_name, $form='') {
     global $base, $include, $conf, $self, $onadb;
 
     // Check permissions
-    if (! (auth('advanced')) ) {
+    if (! (auth('rack_mod') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1817,7 +1817,7 @@ function ws_rack_delete($window_name, $form='') {
     global $include, $conf, $self, $onadb;
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_del') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1866,7 +1866,7 @@ function ws_delete($window_name, $form='') {
     global $include, $conf, $self, $onadb;
 
     // Check permissions
-    if (!auth('advanced')) {
+    if (! (auth('rack_del') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
