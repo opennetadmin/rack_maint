@@ -333,7 +333,7 @@ EOM
 
     // sanitize the numeric values
     if (!is_numeric($options['size'])) {
-        $self['error'] = "ERROR => The specified size was not numeric!";
+        $self['error'] = "ERROR => The specified size was nont numeric!";
         printmsg($self['error'],3);
         return(array(2, $self['error'] . "\n"));
     }
@@ -1283,7 +1283,7 @@ function ws_rack_editor($window_name, $form='') {
 
 
     // Check permissions
-    if (! (auth('rack_mod') or auth('advanced'))){
+    if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1466,7 +1466,7 @@ function ws_ru_editor($window_name, $form='') {
 
 
     // Check permissions
-    if (! (auth('rack_mod') or auth('advanced'))){
+    if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1694,7 +1694,7 @@ function ws_rack_save($window_name, $form='') {
     global $base, $include, $conf, $self, $onadb;
 
     // Check permissions
-    if (! (auth('rack_mod') or auth('advanced'))){
+    if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
@@ -1756,7 +1756,7 @@ function ws_save($window_name, $form='') {
     global $base, $include, $conf, $self, $onadb;
 
     // Check permissions
-    if (! (auth('rack_mod') or auth('advanced'))){
+    if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
         $response->addScript("alert('Permission denied!');");
         return($response->getXML());
