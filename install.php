@@ -51,6 +51,11 @@ $pmodules['rack_modify']['file'] = "..{$plugindir}/{$plugin_name}.inc.php";
 $pmodules['rack_del']['desc'] = 'Delete a rack';
 $pmodules['rack_del']['file'] = "..{$plugindir}/{$plugin_name}.inc.php";
 
+//add new permission 
+$ppermissions['rack_add']['desc'] = 'View and add rack';
+$ppermissions['rack_mod']['desc'] = 'modify rack';
+$ppermissions['rack_del']['desc'] = 'Delete rack';
+
 //------------------------------------------------------------------------------------------
 
 
@@ -107,6 +112,38 @@ EOL;
             }
         } else {
             $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> {$modname}, already installed.<br>";
+        }
+    }
+}
+
+// If we have defined permissions, process them
+if (count($ppermissions) > 0 ) {
+    $window['html'] .= <<<EOL
+<br><b>Installing new plugin permissions:</b><br>
+EOL;
+
+    // Get list of existing permissions to see if they are already installed, Use cache if possible
+    if (!is_array($self['cache']['permissions'])) {
+        list($status, $rows, $perms) = db_get_records($onadb, 'permissions', 'name IS NOT NULL');
+    }
+
+    foreach ($perms as $perm) {
+        $self['cache']['permissions'][$perm['name']] = $perm['description'];
+    }
+
+    // If the new permission does not already exist, add it
+    foreach ($ppermissions as $permname => $attributes) {
+        if (!array_key_exists($permname,$self['cache']['permissions'])) {
+            list($status, $output) = run_module('add_permission', array('name' => $permname, 'desc' => $attributes['desc']));
+            if ($status) {
+                $stat++;
+                $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/error.png' border='0'> {$permname} failed to install.<br>";
+            } else {
+                printmsg("DEBUG => Plugin install for {$plugin_name} created new permission {$permname}.",2);
+                $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> {$permname}<br>";
+            }
+        } else {
+            $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> {$permname}, already installed.<br>";
         }
     }
 }
