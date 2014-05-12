@@ -333,7 +333,7 @@ EOM
 
     // sanitize the numeric values
     if (!is_numeric($options['size'])) {
-        $self['error'] = "ERROR => The specified size was nont numeric!";
+        $self['error'] = "ERROR => The specified size was not numeric!";
         printmsg($self['error'],3);
         return(array(2, $self['error'] . "\n"));
     }
