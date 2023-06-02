@@ -18,7 +18,7 @@ $menuitem = array(
 'type' => 'window',
 
 // Defines the permission type to use for this item to appear.  leave blank for open access.
-'authname' => 'advanced'
+'authname' => ''
 
 );
 

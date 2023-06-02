@@ -14,8 +14,8 @@ $stat = 0;
 
 // Check permissions
 // if (!auth('advanced')) {
-//     $window['js'] = "alert('Permission denied!'); removeElement('{$window_name}');";
-//     return;
+// $window['js'] = "alert('Permission denied!'); removeElement('{$window_name}');";
+// return;
 // }
 
 
@@ -51,6 +51,10 @@ $pmodules['rack_modify']['file'] = "..{$plugindir}/{$plugin_name}.inc.php";
 $pmodules['rack_del']['desc'] = 'Delete a rack';
 $pmodules['rack_del']['file'] = "..{$plugindir}/{$plugin_name}.inc.php";
 
+$ppermissions['rack_add']['desc'] = 'view rack';
+$ppermissions['rack_mod']['desc'] = 'Add and modify rack';
+$ppermissions['rack_del']['desc'] = 'Delete rack';
+
 //------------------------------------------------------------------------------------------
 
 
@@ -58,15 +62,15 @@ $pmodules['rack_del']['file'] = "..{$plugindir}/{$plugin_name}.inc.php";
 
 // Provide basic javascript for the new popup window
 $window['js'] .= <<<EOL
-    /* Put a minimize icon in the title bar */
-    el('{$window_name}_title_r').innerHTML =
-        '&nbsp;<a onClick="toggle_window(\'{$window_name}\');" title="Minimize window" style="cursor: pointer;"><img src="{$images}/icon_minimize.gif" border="0" /></a>' +
-        el('{$window_name}_title_r').innerHTML;
+/* Put a minimize icon in the title bar */
+el('{$window_name}_title_r').innerHTML =
+'&nbsp;<a onClick="toggle_window(\'{$window_name}\');" title="Minimize window" style="cursor: pointer;"><img src="{$images}/icon_minimize.gif" border="0" /></a>' +
+el('{$window_name}_title_r').innerHTML;
 
-    /* Put a help icon in the title bar */
-    el('{$window_name}_title_r').innerHTML =
-        '&nbsp;<a href="{$_ENV['help_url']}{$window_name}" target="null" title="Help" style="cursor: pointer;"><img src="{$images}/silk/help.png" border="0" /></a>' +
-        el('{$window_name}_title_r').innerHTML;
+/* Put a help icon in the title bar */
+el('{$window_name}_title_r').innerHTML =
+'&nbsp;<a href="{$_ENV['help_url']}{$window_name}" target="null" title="Help" style="cursor: pointer;"><img src="{$images}/silk/help.png" border="0" /></a>' +
+el('{$window_name}_title_r').innerHTML;
 
 EOL;
 
@@ -107,6 +111,38 @@ EOL;
             }
         } else {
             $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> {$modname}, already installed.<br>";
+        }
+    }
+}
+
+// If we have defined permissions, process them
+if (count($ppermissions) > 0 ) {
+    $window['html'] .= <<<EOL
+<br><b>Installing new plugin permissions:</b><br>
+EOL;
+
+    // Get list of existing permissions to see if they are already installed, Use cache if possible
+    if (!is_array($self['cache']['permissions'])) {
+        list($status, $rows, $perms) = db_get_records($onadb, 'permissions', 'name IS NOT NULL');
+    }
+
+    foreach ($perms as $perm) {
+        $self['cache']['permissions'][$perm['name']] = $perm['description'];
+    }
+
+    // If the new permission does not already exist, add it
+    foreach ($ppermissions as $permname => $attributes) {
+        if (!array_key_exists($permname,$self['cache']['permissions'])) {
+            list($status, $output) = run_module('add_permission', array('name' => $permname, 'desc' => $attributes['desc']));
+            if ($status) {
+                $stat++;
+                $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/error.png' border='0'> {$permname} failed to install.<br>";
+            } else {
+                printmsg("DEBUG => Plugin install for {$plugin_name} created new permission {$permname}.",2);
+                $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> {$permname}<br>";
+            }
+        } else {
+            $window['html'] .= "&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> {$permname}, already installed.<br>";
         }
     }
 }
@@ -153,22 +189,22 @@ if (file_exists($sqlfile)) {
     // Report any errors
     if ($ok === false or $error) {
         $window['html'] .= <<<EOL
-        <br><b>Installing database updates:</b><br>
-        <img src='{$images}/silk/error.png' border='0'> <font color="red">ERROR => SQL statements failed:</font><br><pre>{$error}</pre>
-        <br><img src='{$images}/silk/error.png' border='0'> Unable to automatically process SQL statements<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="orange">Please try again, or add the following SQL statements manually:</font>
-        <pre>
-        {$sqlcontent}
-        </pre>
-        <br>
-        <font color="orange">Possibly use the following command:<br>
-        mysql -u {$self['db_login']} -p{$self['db_passwd']} {$self['db_database']} < {$sqlfile}</font><br><br>
+<br><b>Installing database updates:</b><br>
+<img src='{$images}/silk/error.png' border='0'> <font color="red">ERROR => SQL statements failed:</font><br><pre>{$error}</pre>
+<br><img src='{$images}/silk/error.png' border='0'> Unable to automatically process SQL statements<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="orange">Please try again, or add the following SQL statements manually:</font>
+<pre>
+{$sqlcontent}
+</pre>
+<br>
+<font color="orange">Possibly use the following command:<br>
+mysql -u {$self['db_login']} -p{$self['db_passwd']} {$self['db_database']} < {$sqlfile}</font><br><br>
 EOL;
         $stat++;
     } else {
         $window['html'] .= <<<EOL
-        <br><b>Installing database updates:</b><br>
-        &nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> All SQL updates were successful.<br>
+<br><b>Installing database updates:</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<img src='{$images}/silk/accept.png' border='0'> All SQL updates were successful.<br>
 EOL;
         if ($has_trans) { $onadb->CompleteTrans(); }
     }
