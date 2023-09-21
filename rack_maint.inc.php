@@ -127,8 +127,8 @@ function ws_display_list($window_name, $form) {
     // Check permissions
     if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
-        $response->addScript("alert('Permission denied!');");
-        return($response->getXML());
+        $response->script("alert('Permission denied!');");
+        return($response);
     }
 
     // If the group supplied an array in a string, build the array and store it in $form
@@ -179,7 +179,7 @@ EOL;
     $count = $rows;
 
 
-    // Loop through and display the groups
+    // Loop through and display the racks
     foreach ($records as $record) {
 
         list ($status, $rows, $loc) = db_get_record($onadb, 'locations', "id={$record['location_id']}");
@@ -255,10 +255,10 @@ EOL;
     // Insert the new table into the window
     // Instantiate the xajaxResponse object
     $response = new xajaxResponse();
-    $response->addAssign("{$form['form_id']}_racks_count",  "innerHTML", "({$count})");
-    $response->addAssign("{$form['content_id']}", "innerHTML", $html);
-    // $response->addScript($js);
-    return($response->getXML());
+    $response->assign("{$form['form_id']}_racks_count",  "innerHTML", "({$count})");
+    $response->assign("{$form['content_id']}", "innerHTML", $html);
+    // $response->script($js);
+    return($response);
 }
 
 
@@ -334,7 +334,7 @@ EOM
     // sanitize the numeric values
     if (!is_numeric($options['size'])) {
         $self['error'] = "ERROR => The specified size was not numeric!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(2, $self['error'] . "\n"));
     }
 
@@ -347,7 +347,7 @@ EOM
     // check the rack name
     list($status, $rows, $rackcheck) = db_get_records($onadb, 'racks', "name='{$options['name']}'");
     if ($status or $rows) {
-        printmsg("ERROR => There is already a rack with that name!",3);
+        printmsg("ERROR => There is already a rack with that name!",0);
         $self['error'] = "ERROR => There is already a rack with that name!";
         return(array(30, $self['error'] . "\n"));
     }
@@ -356,11 +356,15 @@ EOM
     if ($options['location']) {
         list($status, $rows, $loc) = ona_find_location($options['location']);
         if ($status or !$rows) {
-            printmsg("ERROR => Unable to find specified location: {$options['location']}!",3);
+            printmsg("ERROR => Unable to find specified location: {$options['location']}!",0);
             $self['error'] = "ERROR => Unable to find specified location: {$options['location']}!";
             return(array(31, $self['error'] . "\n"));
         }
         $options['location'] = $loc['id'];
+    } else {
+      $self['error'] = "ERROR => Please provide a location value";
+      printmsg($self['error'], 0);
+      return(array(32, $self['error'] . "\n"));
     }
 
     // Check the numbering plan. Assume descending if invalid.
@@ -390,7 +394,7 @@ EOM
             'size'              => $options['size'],
             'description'       => $options['description'],
             'location_id'       => $options['location'],
-           'numbering'         => $options['numbering'],
+            'numbering'         => $options['numbering'],
             'name'              => $options['name']
        )
     );
@@ -486,33 +490,33 @@ EOM
     list($status, $rows, $rack) = ona_get_record(array('id' => $options['rack']), 'racks');
     if ($status or !$rows) {
         $self['error'] = "ERROR => Unable to find rack: {$options['rack']}!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(20, $self['error'] . "\n"));
     }
 
     // sanitize the numeric values
     if (!is_numeric($options['size'])) {
         $self['error'] = "ERROR => The specified size was not numeric!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(2, $self['error'] . "\n"));
     }
     if (!is_numeric($options['position'])) {
         $self['error'] = "ERROR => The specified position was not numeric!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(2, $self['error'] . "\n"));
     }
 
     // size cant be more than rack total size
     if ($options['size'] > $rack['size']) {
         $self['error'] = "ERROR => Your allocation size is larger than the rack itself!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(2, $self['error'] . "\n"));
     }
 
     // the position we start in the rack plus the size we are adding cant exceed rack total size
     if ($options['position']+$options['size'] > $rack['size']+1) {
         $self['error'] = "ERROR => Your allocation size and position extends beyond the rack itself!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(2, $self['error'] . "\n"));
     }
 
@@ -530,7 +534,7 @@ EOM
     }
     else {
         $self['error'] = "ERROR => Invalid mounted_from type '{$options['mounted_from']}'!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(2, $self['error'] . "\n"));
     }
 
@@ -552,7 +556,7 @@ EOM
     }
     else {
         $self['error'] = "ERROR => Invalid depth type '{$options['depth']}'!";
-        printmsg($self['error'],3);
+        printmsg($self['error'],0);
         return(array(3, $self['error'] . "\n"));
     }
 
@@ -568,7 +572,7 @@ EOM
     // check the positions
     list($status, $rows, $rackcheck) = db_get_records($onadb, 'rack_assignments', "rack_id={$rack['id']} and mounted_from={$options['mounted_from']} and ({$possql})");
     if ($status or $rows) {
-        printmsg("ERROR => This device overlaps an existing rack assignment due to its position or size!",3);
+        printmsg("ERROR => This device overlaps an existing rack assignment due to its position or size!",0);
         $self['error'] = "ERROR => This device overlaps an existing rack assignment due to its position or size!";
         return(array(30, $self['error'] . "\n"));
     }
@@ -576,7 +580,7 @@ EOM
     // check the depth
     list($status, $rows, $tmp) = db_get_records($onadb, 'rack_assignments', "rack_id={$rack['id']} and mounted_from={$mnt_opposite} and {$options['depth']} > (4-depth) and ({$possql})");
     if ($status or $rows) {
-        printmsg("ERROR => This device overlaps an existing rack assignment due to its position and depth!",3);
+        printmsg("ERROR => This device overlaps an existing rack assignment due to its position and depth!",0);
         $self['error'] = "ERROR => This device overlaps an existing rack assignment due to its position and depth!";
         return(array(40, $self['error'] . "\n"));
     }
@@ -590,7 +594,7 @@ EOM
         list($status, $rows, $device) = ona_find_device($options['device']);
         if ($status or !$rows) {
             $self['error'] = "ERROR => Unable to find device using: {$options['device']}!";
-            printmsg($self['error'],3);
+            printmsg($self['error'],0);
             return(array(40, $self['error'] . "\n"));
         }
 
@@ -598,7 +602,7 @@ EOM
         list($status, $rows, $tmp) = db_get_records($onadb, 'rack_assignments', "device_id = {$device['id']}");
         if ($status or $rows) {
             $self['error'] = "ERROR => This device is already assigned to a rack: {$options['device']}!";
-            printmsg($self['error'],3);
+            printmsg($self['error'],0);
             return(array(41, $self['error'] . "\n"));
         }
         $options['alt_name'] = '';
@@ -731,7 +735,7 @@ EOM
 
     // Test to see that we were able to find the specified record
     if (!$orig_rack['id']) {
-        printmsg("DEBUG => Unable to find a rack record: {$options['rack']}!",3);
+        printmsg("ERROR => Unable to find a rack record: {$options['rack']}!",0);
         $self['error'] = "ERROR => Unable to find the rack record: {$options['rack']}!";
         return(array(4, $self['error']. "\n"));
     }
@@ -753,7 +757,7 @@ EOM
         // check the rack name
         list($status, $rows, $rackcheck) = db_get_records($onadb, 'racks', "name='{$options['set_name']}'");
         if ($status or $rows) {
-            printmsg("ERROR => There is already a rack with that name!",3);
+            printmsg("ERROR => There is already a rack with that name!",0);
             $self['error'] = "ERROR => There is already a rack with that name!";
             return(array(30, $self['error'] . "\n"));
         }
@@ -773,7 +777,7 @@ EOM
         // sanitize the numeric values
         if (!is_numeric($options['set_size'])) {
             $self['error'] = "ERROR => The specified size was not numeric!";
-            printmsg($self['error'],3);
+            printmsg($self['error'],0);
             return(array(2, $self['error'] . "\n"));
         }
 
@@ -784,7 +788,7 @@ EOM
     if ($options['set_location']) {
         list($status, $rows, $loc) = ona_find_location($options['set_location']);
         if ($status or !$rows) {
-            printmsg("ERROR => Unable to find specified location: {$options['set_location']}!",3);
+            printmsg("ERROR => Unable to find specified location: {$options['set_location']}!",0);
             $self['error'] = "ERROR => Unable to find specified location: {$options['set_location']}!";
             return(array(31, $self['error'] . "\n"));
         }
@@ -919,7 +923,7 @@ EOM
 
     // Test to see that we were able to find the specified record
     if (!$original_rack_assignment['id']) {
-        printmsg("DEBUG => Unable to find a rack_assignment record using ID {$options['rack_assignment']}!",3);
+        printmsg("DEBUG => Unable to find a rack_assignment record using ID {$options['rack_assignment']}!",0);
         $self['error'] = "ERROR => Unable to find the rack_assignment record using ID {$options['rack_assignment']}!";
         return(array(4, $self['error']. "\n"));
     }
@@ -940,7 +944,7 @@ EOM
         list($status, $rows, $device) = ona_find_device($options['set_device']);
         if ($status or !$rows) {
             $self['error'] = "ERROR => Unable to find device using: {$options['set_device']}!";
-            printmsg($self['error'],3);
+            printmsg($self['error'],0);
             return(array(40, $self['error'] . "\n"));
         }
 
@@ -949,7 +953,7 @@ EOM
             list($status, $rows, $tmp) = db_get_records($onadb, 'rack_assignments', "device_id = {$device['id']}");
             if ($status or $rows) {
                 $self['error'] = "ERROR => This device is already assigned to a rack: {$options['device']}!";
-                printmsg($self['error'],3);
+                printmsg($self['error'],0);
                 return(array(41, $self['error'] . "\n"));
             }
 
@@ -1077,7 +1081,7 @@ EOM
 
     // Test to see that we were able to find the specified record
     if (!$entry['id']) {
-        printmsg("DEBUG => Unable to find a rack record using ID {$options['rack']}!",3);
+        printmsg("ERROR => Unable to find a rack record using ID {$options['rack']}!",0);
         $self['error'] = "ERROR => Unable to find the rack record using ID {$options['rack']}!";
         return(array(4, $self['error']. "\n"));
     }
@@ -1208,7 +1212,7 @@ EOM
 
     // Test to see that we were able to find the specified record
     if (!$entry['id']) {
-        printmsg("DEBUG => Unable to find a rack_assignment record using ID {$options['rack_assignment']}!",3);
+        printmsg("ERROR => Unable to find a rack_assignment record using ID {$options['rack_assignment']}!",0);
         $self['error'] = "ERROR => Unable to find the rack_assignment record using ID {$options['rack_assignment']}!";
         return(array(4, $self['error']. "\n"));
     }
@@ -1285,21 +1289,21 @@ function ws_rack_editor($window_name, $form='') {
     // Check permissions
     if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
-        $response->addScript("alert('Permission denied!');");
-        return($response->getXML());
+        $response->script("alert('Permission denied!');");
+        return($response);
     }
 
     // If the user supplied an array in a string, build the array and store it in $form
     $form = parse_options_string($form);
 
-
     // Find the rack we are looking at
     //list($status, $rows, $rack) = db_get_record($onadb, 'racks', array('name' => $form['rack']));
     // Load the record
-    if (is_numeric($form['id']))
+    //if (isset($form['id']) && is_numeric($form['id']))
+    if (is_array($form) && is_numeric($form['id']))
         list($status, $rows, $rack) = db_get_record($onadb, 'racks', array('id' => $form['id']));
-    else
-        list($status, $rows, $rack) = db_get_record($onadb, 'racks', array('name' => $form['id']));
+    elseif (is_array($form))
+        list($status, $rows, $rack) = db_get_record($onadb, 'racks', array('name' => $form['name']));
 
     // get location info
     list ($status, $rows, $loc) = db_get_record($onadb, 'locations', "id={$rack['location_id']}");
@@ -1401,7 +1405,7 @@ EOL;
         </tr>
 
         <tr>
-            <td align="right"  nowrap="true">
+            <td class="input_required" align="right"  nowrap="true">
                 Location
             </td>
             <td class="padding" align="left" width="100%" nowrap="true">
@@ -1425,11 +1429,11 @@ EOL;
             <td class="padding" align="right" width="100%">
                 <input type="hidden" name="overwrite" value="{$overwrite}">
                 <input class="edit" type="button" name="cancel" value="Cancel" onClick="removeElement('{$window_name}');">
-                <input class="edit" type="button"
+                <button type="submit"
                     name="submit"
                     value="Save"
                     onClick="xajax_window_submit('{$window_name}', xajax.getFormValues('rack_edit_form'), 'rack_save');"
-                >
+                >Save</button>
             </td>
         </tr>
 
@@ -1468,8 +1472,8 @@ function ws_ru_editor($window_name, $form='') {
     // Check permissions
     if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
-        $response->addScript("alert('Permission denied!');");
-        return($response->getXML());
+        $response->script("alert('Permission denied!');");
+        return($response);
     }
 
     // If the user supplied an array in a string, build the array and store it in $form
@@ -1482,12 +1486,25 @@ function ws_ru_editor($window_name, $form='') {
 
     // Check that our device does not overlap with any other devices
     // Generate SQL for each position
-    for ($i=$form['position']; $i <= $form['position']; $i++) {
+    if ($rack['numbering'] == 'DESC') {
+      for ($i=$form['position']; $i <= $form['position']; $i++) {
         if ($possql) $possql = ' '.$possql.' or ';
         $possql .= "{$i} between position and position+size-1";
+      }
+    } else {
+      for ($i=$form['position']; $i <= $form['position']; $i++) {
+        if ($possql) $possql = ' '.$possql.' or ';
+        $possql .= "{$i} between position and position+size-1";
+      }
     }
 
-    list($status, $rows, $rackunit) = db_get_record($onadb, 'rack_assignments', "rack_id={$rack['id']} and mounted_from={$form['mounted_from']} and ({$possql})");
+            printmsg("POSSQL: $possql",0);
+
+    if ($form['rack_assignment']) {
+      list($status, $rows, $rackunit) = db_get_record($onadb, 'rack_assignments', "rack_id={$rack['id']} and id={$form['rack_assignment']}");
+    } else {
+      list($status, $rows, $rackunit) = db_get_record($onadb, 'rack_assignments', "rack_id={$rack['id']} and mounted_from={$form['mounted_from']} and ({$possql})");
+    }
 
     // get names for mount direction
     if (!$rackunit['mounted_from']) $rackunit['mounted_from'] = $form['mounted_from'];
@@ -1501,7 +1518,7 @@ function ws_ru_editor($window_name, $form='') {
         list($status, $rows, $device) = ona_get_host_record(array('device_id' => $rackunit['device_id']));
         if ($status or !$rows) {
             $self['error'] = "ERROR => Unable to find device using: {$rackunit['device_id']}!";
-            printmsg($self['error'],3);
+            printmsg($self['error'],0);
         }
         $rackunit['device'] = $device['fqdn'];
     }
@@ -1657,11 +1674,11 @@ EOL;
             <td class="padding" align="right" width="100%">
                 <input type="hidden" name="overwrite" value="{$overwrite}">
                 <input class="edit" type="button" name="cancel" value="Cancel" onClick="removeElement('{$window_name}');">
-                <input class="edit" type="button"
+                <button type="submit"
                     name="submit"
                     value="Save"
                     onClick="xajax_window_submit('{$window_name}', xajax.getFormValues('ru_edit_form'), 'save');"
-                >
+                >Save</button>
             </td>
         </tr>
 
@@ -1696,8 +1713,8 @@ function ws_rack_save($window_name, $form='') {
     // Check permissions
     if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
-        $response->addScript("alert('Permission denied!');");
-        return($response->getXML());
+        $response->script("alert('Permission denied!');");
+        return($response);
     }
 
     // Instantiate the xajaxResponse object
@@ -1717,7 +1734,7 @@ function ws_rack_save($window_name, $form='') {
         $form['rack'] = $form['rack_id'];
     }
 
-    // If there's no "refresh" javascript, add a command to view the new block
+    // If there's no "refresh" javascript, add a command to view the new rack
     if (!preg_match('/\w/', $form['js']))
          $form['js'] = "xajax_window_submit('work_space', 'xajax_window_submit(\'rack_maint\', \'id=>{$form['name']}\', \'display\')');";
 
@@ -1733,8 +1750,8 @@ function ws_rack_save($window_name, $form='') {
     }
 
     // Insert the new table into the window
-    $response->addScript($js);
-    return($response->getXML());
+    $response->script($js);
+    return($response);
 }
 
 
@@ -1758,8 +1775,8 @@ function ws_save($window_name, $form='') {
     // Check permissions
     if (! (auth('rack_add') or auth('advanced'))){
         $response = new xajaxResponse();
-        $response->addScript("alert('Permission denied!');");
-        return($response->getXML());
+        $response->script("alert('Permission denied!');");
+        return($response);
     }
 
     // Instantiate the xajaxResponse object
@@ -1796,8 +1813,8 @@ function ws_save($window_name, $form='') {
     }
 
     // Insert the new table into the window
-    $response->addScript($js);
-    return($response->getXML());
+    $response->script($js);
+    return($response);
 }
 
 
@@ -1819,8 +1836,8 @@ function ws_rack_delete($window_name, $form='') {
     // Check permissions
     if (! (auth('rack_del') or auth('advanced'))){
         $response = new xajaxResponse();
-        $response->addScript("alert('Permission denied!');");
-        return($response->getXML());
+        $response->script("alert('Permission denied!');");
+        return($response);
     }
 
     // If an array in a string was provided, build the array and store it in $form
@@ -1843,8 +1860,8 @@ function ws_rack_delete($window_name, $form='') {
         $js .= $form['js'];  // usually js will refresh the window we got called from
 
     // Return an XML response
-    $response->addScript($js);
-    return($response->getXML());
+    $response->script($js);
+    return($response);
 }
 
 
@@ -1868,8 +1885,8 @@ function ws_delete($window_name, $form='') {
     // Check permissions
     if (! (auth('rack_del') or auth('advanced'))){
         $response = new xajaxResponse();
-        $response->addScript("alert('Permission denied!');");
-        return($response->getXML());
+        $response->script("alert('Permission denied!');");
+        return($response);
     }
 
     // If an array in a string was provided, build the array and store it in $form
@@ -1892,8 +1909,8 @@ function ws_delete($window_name, $form='') {
         $js .= $form['js'];  // usually js will refresh the window we got called from
 
     // Return an XML response
-    $response->addScript($js);
-    return($response->getXML());
+    $response->script($js);
+    return($response);
 }
 
 
@@ -1931,9 +1948,9 @@ EOL;
     // Insert the new html into the window
     // Instantiate the xajaxResponse object
     $response = new xajaxResponse();
-    $response->addAssign("rack_unit_info", "innerHTML", $html);
-    if ($js) { $response->addScript($js); }
-    return($response->getXML());
+    $response->assign("rack_unit_info", "innerHTML", $html);
+    if ($js) { $response->script($js); }
+    return($response);
 
 }*/
 
@@ -2041,8 +2058,8 @@ function ws_display($window_name, $form='') {
         array_pop($_SESSION['ona']['work_space']['history']);
         $html .= "<br><center><font color=\"red\"><b>Rack doesn't exist!</b></font></center>";
         $response = new xajaxResponse();
-        $response->addAssign("work_space_content", "innerHTML", $html);
-        return($response->getXML());
+        $response->assign("work_space_content", "innerHTML", $html);
+        return($response);
     }
 
     // get location info
@@ -2206,7 +2223,7 @@ EOL;
     // Start at the top rack U and start a loop of this rack until we reach its SIZE
     $j = 1;
     while ($j <= $record['size']):
-        if ($record['numbering'] == 'ASC') {
+       if ($record['numbering'] == 'ASC') {
            //We need to reverse the numbering scheme
            $i = abs($j - 1 - $record['size']);
        } else {
@@ -2279,10 +2296,12 @@ EOL;
                 }
             }
             if ($assignment_front['alt_name']) $assignmentf_name = $fname = $assignment_front['alt_name'];
+	    $fedit_link="onClick=\"xajax_window_submit('rack_maint', 'rack=>{$record['name']},rack_assignment=>{$fid}', 'ru_editor');\"";
 
         } else {
             if ($bsize_counter <= 0) {
                 $fused_color = '';
+	        $fedit_link="onClick=\"xajax_window_submit('rack_maint', 'rack=>{$record['name']},position=>{$i},mounted_from=>1', 'ru_editor');\"";
             }
 
             if ($fsize_counter <= 0) {
@@ -2331,10 +2350,12 @@ EOL;
                 }
             }
             if ($assignment_back['alt_name']) $assignmentb_name = $bname = $assignment_back['alt_name'];
+	    $bedit_link="onClick=\"xajax_window_submit('rack_maint', 'rack=>{$record['name']},rack_assignment=>{$bid}', 'ru_editor');\"";
 
         } else {
             if ($fsize_counter <= 0) {
                 $bused_color = '';
+	        $bedit_link="onClick=\"xajax_window_submit('rack_maint', 'rack=>{$record['name']},position=>{$i},mounted_from=>2', 'ru_editor');\"";
             }
 
             if ($bsize_counter <= 0) {
@@ -2355,6 +2376,7 @@ EOL;
         if ($fdepth == 2) $fdepth_name = 'Half';
 
 
+	// MP: fixme come on, you know what a style sheet is!
         // Lets start printing the row, now that we have all our info, formatted for javascript
         $unit_detail = "'<table width=100% cellspacing=0  style=\'font-size: xx-small;\'> \
 <tr><td colspan=4 style=\'text-align: center;font-weight: bold;\'>Unit {$i} Detail</td></tr> \
@@ -2371,7 +2393,7 @@ EOL;
 
         // Front of the rack
         $rackunit .= "
-<td width=15% style=\"text-align: center;font-size: xx-small;border: 1px solid;border-top: 0px;{$fborder}background-color: {$fused_color};\">{$assignmentf_name}&nbsp;</td>
+<td width=15% style=\"text-align: center;font-size: xx-small;border: 1px solid;border-top: 0px;{$fborder}background-color: {$fused_color};\" {$fedit_link}>{$assignmentf_name}&nbsp;</td>
 <td width=5 style=\"font-size: xx-small;\">&nbsp;</td>";
 
 
@@ -2386,7 +2408,7 @@ EOL;
         $rackunit .= <<<EOL
     <td style="font-size: xx-small;">&nbsp;</td>
     <td width=15%
-        style="text-align: center;font-size: xx-small;border: 1px solid;border-top: 0px;{$bborder}background-color: {$bused_color};">&nbsp;{$assignmentb_name}&nbsp;
+        style="text-align: center;font-size: xx-small;border: 1px solid;border-top: 0px;{$bborder}background-color: {$bused_color};" {$bedit_link}>&nbsp;{$assignmentb_name}&nbsp;
     </td>
     <td id="act-{$i}" style="background-color: #ffffff;visibility: hidden;display: none;padding-bottom: 2px;" nowrap="true">
         <span style="border:1px solid;border-left:0px;padding-bottom: 2px;">
@@ -2461,9 +2483,9 @@ EOL;
     // Insert the new html into the window
     // Instantiate the xajaxResponse object
     $response = new xajaxResponse();
-    $response->addAssign("work_space_content", "innerHTML", $html);
-    if ($js) { $response->addScript($js); }
-    return($response->getXML());
+    $response->assign("work_space_content", "innerHTML", $html);
+    if ($js) { $response->script($js); }
+    return($response);
 }
 
 
