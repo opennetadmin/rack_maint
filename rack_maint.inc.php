@@ -345,7 +345,7 @@ EOM
     $options['name'] = strtoupper($options['name']);
 
     // check the rack name
-    list($status, $rows, $rackcheck) = db_get_records($onadb, 'racks', "name='{$options['name']}'");
+    list($status, $rows, $rackcheck) = db_get_records($onadb, 'racks', array('name' => $options['name']));
     if ($status or $rows) {
         printmsg("ERROR => There is already a rack with that name!",3);
         $self['error'] = "ERROR => There is already a rack with that name!";
@@ -751,7 +751,7 @@ EOM
         $options['set_name'] = strtoupper($options['set_name']);
 
         // check the rack name
-        list($status, $rows, $rackcheck) = db_get_records($onadb, 'racks', "name='{$options['set_name']}'");
+        list($status, $rows, $rackcheck) = db_get_records($onadb, 'racks', array('name' => $options['set_name']));
         if ($status or $rows) {
             printmsg("ERROR => There is already a rack with that name!",3);
             $self['error'] = "ERROR => There is already a rack with that name!";
@@ -915,7 +915,7 @@ EOM
     }
 
     // Determine the entry itself exists
-    list($status, $rows, $original_rack_assignment) = db_get_record($onadb, 'rack_assignments', "id={$options['rack_assignment']}");
+    list($status, $rows, $original_rack_assignment) = db_get_record($onadb, 'rack_assignments', array('id' => $options['rack_assignment']));
 
     // Test to see that we were able to find the specified record
     if (!$original_rack_assignment['id']) {
@@ -1204,7 +1204,7 @@ EOM
 
 
     // Check if it exists
-    list($status, $rows, $entry) = db_get_record($onadb, 'rack_assignments', "id={$options['rack_assignment']}");
+    list($status, $rows, $entry) = db_get_record($onadb, 'rack_assignments', array('id' => $options['rack_assignment']));
 
     // Test to see that we were able to find the specified record
     if (!$entry['id']) {
@@ -1474,6 +1474,9 @@ function ws_ru_editor($window_name, $form='') {
 
     // If the user supplied an array in a string, build the array and store it in $form
     $form = parse_options_string($form);
+    // These values are used in SQL below, so force them to integers
+    $form['mounted_from'] = intval($form['mounted_from']);
+    $form['position'] = intval($form['position']);
     $rackunit['mounted_from'] = $form['mounted_from'];
 
     // Find the rack we are looking at
